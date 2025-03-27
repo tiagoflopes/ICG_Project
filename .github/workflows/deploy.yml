@@ -19,10 +19,10 @@ jobs:
         uses: actions/setup-node@v4
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Build project
-        run: npm vite build
+        run: pnpm vite build
 
       - name: Upload production-ready build files
         uses: actions/upload-artifact@v4
