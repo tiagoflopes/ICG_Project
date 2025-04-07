@@ -7,6 +7,8 @@ let player, moveForward = false, moveBackward = false, moveLeft = false, moveRig
 const speed = 0.1;
 let wallBoxes = [];
 let minimapCamera;
+let pressurePlate;
+let barriers = [];
 
 
 function generateMaze(size) {
@@ -114,6 +116,22 @@ function init() {
     goal.position.set(goalX, 0.1, goalZ);
     scene.add(goal);
 
+    const barrierGeometry = new THREE.BoxGeometry(wallSize, 2, wallSize);
+    const barrierMaterial = new THREE.MeshStandardMaterial({ color: 0x8B0000 });
+    const barrierPositions = [
+        [goalX - wallSize, 1, goalZ],
+        [goalX + wallSize, 1, goalZ],
+        [goalX, 1, goalZ - wallSize],
+        [goalX, 1, goalZ + wallSize]
+    ];
+
+    barriers = barrierPositions.map(([x, y, z]) => {
+        const barrier = new THREE.Mesh(barrierGeometry, barrierMaterial);
+        barrier.position.set(x, y, z);
+        scene.add(barrier);
+        return barrier;
+    });
+
     const plateCandidates = [];
     for (let y = Math.floor(mazeSize / 2); y < mazeSize; y++) {
         for (let x = Math.floor(mazeSize / 2); x < mazeSize; x++) {
@@ -131,9 +149,10 @@ function init() {
     // 🟪 Create and place the pressure plate
     const plateGeometry = new THREE.BoxGeometry(wallSize, 0.1, wallSize);
     const plateMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00 });
-    const pressurePlate = new THREE.Mesh(plateGeometry, plateMaterial);
+    pressurePlate = new THREE.Mesh(plateGeometry, plateMaterial);
     pressurePlate.position.set(plateWorldX, 0.05, plateWorldZ);
     scene.add(pressurePlate);
+    pressurePlate.triggered = false;
 
     // 🧍 Player
     const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
@@ -221,6 +240,19 @@ function animate() {
 
     if (!xBlocked) nextPosition.x += moveDelta.x;
     if (!zBlocked) nextPosition.z += moveDelta.z;
+
+    // 💥 Pressure plate detection
+    if (pressurePlate && !pressurePlate.triggered) {
+        const plateBox = new THREE.Box3().setFromObject(pressurePlate);
+        const playerBox = new THREE.Box3().setFromObject(player);
+
+        if (playerBox.intersectsBox(plateBox)) {
+            console.log("Pressure plate activated!");
+            barriers.forEach(barrier => scene.remove(barrier));
+            scene.remove(pressurePlate);
+            pressurePlate.triggered = true;
+        }
+    }
 
     // Apply movement
     player.position.copy(nextPosition);
