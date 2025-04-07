@@ -6,6 +6,8 @@ let scene, camera, renderer, controls;
 let player, moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 const speed = 0.1;
 let wallBoxes = [];
+let minimapCamera;
+
 
 function generateMaze(size) {
     const maze = Array.from({ length: size }, () => Array(size).fill(1));
@@ -59,6 +61,11 @@ function init() {
     const mazeSize = 29; // Must be odd for proper walls
     const mazeLayout = generateMaze(mazeSize);
 
+    // Get center point and ensure it's open
+    const centerX = Math.floor(mazeSize / 2);
+    const centerY = Math.floor(mazeSize / 2);
+    mazeLayout[centerY][centerX] = 0;
+
     const wallSize = 2;
     const wallGeometry = new THREE.BoxGeometry(wallSize, 2, wallSize);
     const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
@@ -98,6 +105,36 @@ function init() {
     ground.receiveShadow = true;
     scene.add(ground);
 
+    const goalX = centerX * wallSize + offsetX;
+    const goalZ = centerY * wallSize + offsetZ;
+
+    const goalGeometry = new THREE.CylinderGeometry(0.6, 0.6, 0.2, 32);
+    const goalMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+    const goal = new THREE.Mesh(goalGeometry, goalMaterial);
+    goal.position.set(goalX, 0.1, goalZ);
+    scene.add(goal);
+
+    const plateCandidates = [];
+    for (let y = Math.floor(mazeSize / 2); y < mazeSize; y++) {
+        for (let x = Math.floor(mazeSize / 2); x < mazeSize; x++) {
+            if (mazeLayout[y][x] === 0) {
+                plateCandidates.push([x, y]);
+            }
+        }
+    }
+
+    // 🎯 Randomly pick one of those
+    const [plateX, plateY] = plateCandidates[Math.floor(Math.random() * plateCandidates.length)];
+    const plateWorldX = plateX * wallSize + offsetX;
+    const plateWorldZ = plateY * wallSize + offsetZ;
+
+    // 🟪 Create and place the pressure plate
+    const plateGeometry = new THREE.BoxGeometry(wallSize, 0.1, wallSize);
+    const plateMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00 });
+    const pressurePlate = new THREE.Mesh(plateGeometry, plateMaterial);
+    pressurePlate.position.set(plateWorldX, 0.05, plateWorldZ);
+    scene.add(pressurePlate);
+
     // 🧍 Player
     const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
     const playerMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
@@ -110,11 +147,23 @@ function init() {
 
     camera.position.set(startX, 1.6, startZ);
 
+    // 📡 Minimap camera (orthographic, top-down)
+    const aspect = window.innerWidth / window.innerHeight;
+    const mapSize = mazeLayout.length * wallSize;
+    minimapCamera = new THREE.OrthographicCamera(
+        -mapSize / 2, mapSize / 2,
+        mapSize / 2, -mapSize / 2,
+        0.1, 100
+    );
+    minimapCamera.position.set(0, 50, 0); // High above
+    minimapCamera.lookAt(0, 0, 0);
+
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup', onKeyUp);
 
     animate();
 }
+
 
 function onKeyDown(event) {
     switch (event.code) {
@@ -125,6 +174,7 @@ function onKeyDown(event) {
     }
 }
 
+
 function onKeyUp(event) {
     switch (event.code) {
         case 'KeyW': moveForward = false; break;
@@ -133,6 +183,7 @@ function onKeyUp(event) {
         case 'KeyD': moveRight = false; break;
     }
 }
+
 
 function animate() {
     requestAnimationFrame(animate);
@@ -175,7 +226,20 @@ function animate() {
     player.position.copy(nextPosition);
     camera.position.copy(player.position).y += 0.6;
 
+    // 🎮 Main view
+    renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+    renderer.setScissorTest(false);
     renderer.render(scene, camera);
+
+    // 🗺️ Minimap view (top-right corner)
+    const mapWidth = 200, mapHeight = 200;
+    renderer.setViewport(window.innerWidth - mapWidth - 10, window.innerHeight - mapHeight - 10, mapWidth, mapHeight);
+    renderer.setScissor(window.innerWidth - mapWidth - 10, window.innerHeight - mapHeight - 10, mapWidth, mapHeight);
+    renderer.setScissorTest(true);
+    renderer.setClearColor(0x000000, 1); // Minimap background
+    renderer.clear();
+    renderer.render(scene, minimapCamera);
 }
+
 
 init();
