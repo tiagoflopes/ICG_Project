@@ -35,10 +35,6 @@ function init() {
   const controls = new PointerLockControls(camera, document.body);
   document.body.addEventListener('click', () => controls.lock());
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.03));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-  dirLight.position.set(5, 10, 7.5);
-  scene.add(dirLight);
   scene.fog = new THREE.Fog(0x000000, 5, 30)
 
   const { layout, offsetX, offsetZ, wallBoxes: boxes } = generateMaze(scene, mazeSize, wallSize);
@@ -47,24 +43,32 @@ function init() {
   const groundSize = mazeSize * wallSize;
 
   const textureLoader = new THREE.TextureLoader();
-  const floorTex = textureLoader.load('https://threejs.org/examples/textures/metal/Metal_Plate_016_basecolor.jpg');
-  const floorRough = textureLoader.load('https://threejs.org/examples/textures/metal/Metal_Plate_016_roughness.jpg');
-  const floorNormal = textureLoader.load('https://threejs.org/examples/textures/metal/Metal_Plate_016_normal.jpg');
+  const floorTex = textureLoader.load('textures/metal_plate_diff_1k.jpg');
+  const floorMetal = textureLoader.load('textures/metal_plate_metal_1k.jpg');
+  const floorAo = textureLoader.load('textures/metal_plate_ao_1k.jpg');
+  const floorRough = textureLoader.load('textures/metal_plate_rough_1k.jpg');
+  const floorNormal = textureLoader.load('textures/metal_plate_nor_gl_1k.jpg');
 
   floorTex.wrapS = floorTex.wrapT =
   floorRough.wrapS = floorRough.wrapT =
+  floorMetal.wrapS = floorAo.wrapT =
   floorNormal.wrapS = floorNormal.wrapT = THREE.RepeatWrapping;
 
   floorTex.repeat.set(20, 20);
+  floorMetal.repeat.set(20, 20);
+  floorAo.repeat.set(20, 20);
   floorRough.repeat.set(20, 20);
   floorNormal.repeat.set(20, 20);
 
   const groundMaterial = new THREE.MeshStandardMaterial({
     map: floorTex,
+    metalnessMap: floorMetal,
+    aoMap: floorAo,
     roughnessMap: floorRough,
     normalMap: floorNormal,
     metalness: 1,
-    roughness: 0.2,
+    roughness: 0.1,
+    color: 0x111111
   });
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(groundSize, groundSize), groundMaterial);
   ground.rotation.x = -Math.PI / 2;
