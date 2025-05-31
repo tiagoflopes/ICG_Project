@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
-import { generateMaze } from './maze.js';
-import { createPlayer, updatePlayerPosition } from './player.js';
-import { setupControls, handleKeyDown, handleKeyUp } from './controls.js';
-import { setupMinimap, renderMinimap } from './minimap.js';
+import { generateMaze } from './maze';
+import { createPlayer, updatePlayerPosition } from './player';
+import { setupControls, handleKeyDown, handleKeyUp } from './controls';
+import { setupMinimap, renderMinimap } from './minimap';
 import { spawnDots, animateDots, checkDotCollection } from "./collectibles";
+import { loadEnemy, updateEnemy, getEnemyState } from "./enemy";
 
-let scene, camera, renderer, player, wallBoxes = [], minimapCamera;
+let scene, camera, renderer, player = [], minimapCamera;
 let clock = new THREE.Clock();
 const wallSize = 4;
 const mazeSize = 21;
@@ -38,7 +39,7 @@ function init() {
   scene.add(dirLight);
 
   const { layout, offsetX, offsetZ, wallBoxes: boxes } = generateMaze(scene, mazeSize, wallSize);
-  wallBoxes = boxes;
+  window.wallBoxes = boxes;
 
   const groundSize = mazeSize * wallSize;
   const groundTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg');
@@ -52,6 +53,8 @@ function init() {
   scene.add(ground);
 
   spawnDots(scene, layout, wallSize, offsetX, offsetZ, 30);
+
+  loadEnemy(scene, layout, offsetX, offsetZ, wallSize);
 
   const startX = 1 * wallSize + offsetX;
   const startZ = 1 * wallSize + offsetZ;
@@ -72,13 +75,18 @@ function animate() {
 
   requestAnimationFrame(animate);
 
-  updatePlayerPosition(player, camera, moveState, wallBoxes);
+  updateEnemy(player, scene);
+  updatePlayerPosition(player, camera, moveState, window.wallBoxes);
 
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
   renderer.setScissorTest(false);
   renderer.render(scene, camera);
 
   renderMinimap(renderer, scene, minimapCamera);
+
+  if (getEnemyState() === 'CHASE') {
+
+  }
 
   const gameWon = checkDotCollection(player, scene);
   if (gameWon) {
