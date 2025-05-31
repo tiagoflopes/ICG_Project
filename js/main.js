@@ -3,11 +3,11 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import { generateMaze } from './maze';
 import { createPlayer, updatePlayerPosition } from './player';
 import { setupControls, handleKeyDown, handleKeyUp } from './controls';
-import { setupMinimap, renderMinimap } from './minimap';
 import { spawnDots, animateDots, checkDotCollection } from "./collectibles";
 import { loadEnemy, updateEnemy, getEnemyState } from "./enemy";
 
-let scene, camera, renderer, player = [], minimapCamera;
+let scene, camera, renderer = [];
+let player;
 let clock = new THREE.Clock();
 const wallSize = 4;
 const mazeSize = 21;
@@ -28,29 +28,54 @@ function init() {
 
   renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.body.appendChild(renderer.domElement);
 
   const controls = new PointerLockControls(camera, document.body);
   document.body.addEventListener('click', () => controls.lock());
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.03));
   const dirLight = new THREE.DirectionalLight(0xffffff, 1);
   dirLight.position.set(5, 10, 7.5);
   scene.add(dirLight);
+  scene.fog = new THREE.Fog(0x000000, 5, 30)
 
   const { layout, offsetX, offsetZ, wallBoxes: boxes } = generateMaze(scene, mazeSize, wallSize);
   window.wallBoxes = boxes;
 
   const groundSize = mazeSize * wallSize;
-  const groundTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg');
-  groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
-  groundTexture.repeat.set(25, 25);
 
-  const groundMaterial = new THREE.MeshStandardMaterial({ map: groundTexture });
+  const textureLoader = new THREE.TextureLoader();
+  const floorTex = textureLoader.load('https://threejs.org/examples/textures/metal/Metal_Plate_016_basecolor.jpg');
+  const floorRough = textureLoader.load('https://threejs.org/examples/textures/metal/Metal_Plate_016_roughness.jpg');
+  const floorNormal = textureLoader.load('https://threejs.org/examples/textures/metal/Metal_Plate_016_normal.jpg');
+
+  floorTex.wrapS = floorTex.wrapT =
+  floorRough.wrapS = floorRough.wrapT =
+  floorNormal.wrapS = floorNormal.wrapT = THREE.RepeatWrapping;
+
+  floorTex.repeat.set(20, 20);
+  floorRough.repeat.set(20, 20);
+  floorNormal.repeat.set(20, 20);
+
+  const groundMaterial = new THREE.MeshStandardMaterial({
+    map: floorTex,
+    roughnessMap: floorRough,
+    normalMap: floorNormal,
+    metalness: 1,
+    roughness: 0.2,
+  });
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(groundSize, groundSize), groundMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
+
+  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(groundSize, groundSize), groundMaterial);
+  ceiling.rotation.x = Math.PI / 2; // flip upward
+  ceiling.position.y = 3;
+  ceiling.receiveShadow = true;
+  scene.add(ceiling);
 
   spawnDots(scene, layout, wallSize, offsetX, offsetZ, 30);
 
@@ -61,8 +86,6 @@ function init() {
 
   player = createPlayer(scene, startX, startZ);
   camera.position.set(startX, 1.6, startZ);
-
-  minimapCamera = setupMinimap(mazeSize, wallSize);
 
   setupControls(moveState, handleKeyDown, handleKeyUp);
 
@@ -81,8 +104,6 @@ function animate() {
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
   renderer.setScissorTest(false);
   renderer.render(scene, camera);
-
-  renderMinimap(renderer, scene, minimapCamera);
 
   if (getEnemyState() === 'CHASE') {
 

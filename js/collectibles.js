@@ -16,14 +16,21 @@ export function spawnDots(scene, mazeLayout, wallSize, offsetX, offsetZ, amount 
 
   const shuffled = walkableTiles.sort(() => Math.random() - 0.5).slice(0, amount);
 
-  const geometry = new THREE.SphereGeometry(0.2, 16, 16);
-  const material = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffff00 });
+  const dotLight = new THREE.PointLight(0xffffff, 5, 6);
+  const dotGeo = new THREE.SphereGeometry(0.2, 16, 16);
+  const dotMat = new THREE.MeshStandardMaterial({
+    emissive: 0xffffff,
+    emissiveIntensity: 5,
+    color: 0x111111
+  });
 
   dots = shuffled.map(({ x, z }) => {
-    const dot = new THREE.Mesh(geometry, material.clone());
+    const dot = new THREE.Mesh(dotGeo, dotMat);
     dot.position.set(x * wallSize + offsetX, 1.5, z * wallSize + offsetZ);
     dot.userData.baseY = dot.position.y;
+    dotLight.position.copy(dot.position)
     scene.add(dot);
+    scene.add(dotLight)
     return dot;
   });
 }

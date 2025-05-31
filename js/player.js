@@ -8,6 +8,15 @@ export function createPlayer(scene, x, z) {
   const player = new THREE.Mesh(geometry, material);
   player.position.set(x, 1, z);
   scene.add(player);
+
+  const lantern = new THREE.SpotLight(0xffffff, 5, 20, Math.PI / 6, 0.3, 1);
+  lantern.castShadow = true;
+  lantern.shadow.mapSize.set(512, 512);
+  scene.add(lantern);
+  scene.add(lantern.target);
+
+  player.userData.lantern = lantern;
+
   return player;
 }
 
@@ -44,4 +53,12 @@ export function updatePlayerPosition(player, camera, moveState, wallBoxes) {
 
   player.position.copy(nextPos);
   camera.position.set(player.position.x, player.position.y + 0.6, player.position.z);
+
+  const lantern = player.userData.lantern;
+  if (lantern) {
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    lantern.position.copy(player.position).y += 0.5;
+    lantern.target.position.copy(player.position.clone().add(dir.multiplyScalar(5)));
+  }
 }
