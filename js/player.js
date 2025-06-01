@@ -21,6 +21,8 @@ export function createPlayer(scene, x, z) {
 }
 
 export function updatePlayerPosition(player, camera, moveState, wallBoxes) {
+  if (window.disableMovement) return;
+
   const direction = new THREE.Vector3();
   camera.getWorldDirection(direction);
   direction.y = 0;
@@ -52,7 +54,11 @@ export function updatePlayerPosition(player, camera, moveState, wallBoxes) {
   if (!zBlocked) nextPos.z += moveDelta.z;
 
   player.position.copy(nextPos);
-  camera.position.set(player.position.x, player.position.y + 0.6, player.position.z);
+  camera.parent.position.set(
+    player.position.x,
+    player.position.y,
+    player.position.z
+  );
 
   const lantern = player.userData.lantern;
   if (lantern) {

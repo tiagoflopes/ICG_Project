@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
-import { generateMaze } from './maze';
+import { generateMaze, stripMat } from './maze';
 import { createPlayer, updatePlayerPosition } from './player';
 import { setupControls, handleKeyDown, handleKeyUp } from './controls';
 import { spawnDots, animateDots, checkDotCollection } from "./collectibles";
@@ -9,6 +9,8 @@ import { loadEnemy, updateEnemy, getEnemyState } from "./enemy";
 let scene, camera, renderer = [];
 let player;
 let clock = new THREE.Clock();
+let wasChasing = false;
+let cameraRig;
 const wallSize = 4;
 const mazeSize = 21;
 
@@ -19,6 +21,16 @@ const moveState = {
   right: false,
   run: false
 };
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('startMenu').style.display = 'none';
+  init();
+});
+
+document.getElementById('helpBtn').addEventListener('click', () => {
+  const help = document.getElementById('helpText');
+  help.style.display = help.style.display === 'none' ? 'block' : 'none';
+});
 
 function init() {
   scene = new THREE.Scene();
@@ -89,11 +101,35 @@ function init() {
   const startZ = 1 * wallSize + offsetZ;
 
   player = createPlayer(scene, startX, startZ);
-  camera.position.set(startX, 1.6, startZ);
+  cameraRig = new THREE.Object3D();
+  camera.position.set(0, 0.6, 0);
+  cameraRig.add(camera);
+  cameraRig.position.set(startX, 0.6, startZ);
+  cameraRig.rotation.set(0, 0, 0)
+  scene.add(cameraRig)
 
   setupControls(moveState, handleKeyDown, handleKeyUp);
 
   animate();
+}
+
+function applyChaseEffects(time) {
+  // Flickering red
+  const flicker = (Math.sin(time * 20) + 1) / 2;
+  const red = new THREE.Color().lerpColors(
+    new THREE.Color(0x440000),
+    new THREE.Color(0xff0000),
+    flicker
+  );
+  stripMat.emissive.set(red);
+
+  // Camera tilt
+  cameraRig.rotation.z = Math.sin(time * 8) * 0.05;
+}
+
+function resetChaseEffects() {
+  stripMat.emissive.set(0x00ffff); // restore original color
+  cameraRig.rotation.z = 0; // restore upright view
 }
 
 function animate() {
@@ -109,14 +145,25 @@ function animate() {
   renderer.setScissorTest(false);
   renderer.render(scene, camera);
 
-  if (getEnemyState() === 'CHASE') {
+  const enemyState = getEnemyState();
+  const time = clock.getElapsedTime();
 
+  if (enemyState === 'CHASE') {
+    applyChaseEffects(time);
+    wasChasing = true;
+  } else if (wasChasing) {
+    resetChaseEffects();
+    wasChasing = false;
   }
 
   const gameWon = checkDotCollection(player, scene);
   if (gameWon) {
-    console.log("You won.")
+    if (!window.hasWon) {
+      window.hasWon = true;
+      document.getElementById('youWon').style.display = 'block';
+      window.disableMovement = true;
+
+      setTimeout(() => location.reload(), 5000);
+    }
   }
 }
-
-init();

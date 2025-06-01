@@ -1,14 +1,15 @@
 import * as THREE from 'three';
 
+export const stripMat = new THREE.MeshStandardMaterial({
+  emissive: 0x00ffff,
+  emissiveIntensity: 2,
+  color: 0x000000,
+  metalness: 1,
+  roughness: 0.1
+});
+
 export function generateMaze(scene, size, wallSize) {
   const stripGeo = new THREE.BoxGeometry(wallSize, 0.07, 0.05);
-  const stripMat = new THREE.MeshStandardMaterial({
-    emissive: 0x00ffff,
-    emissiveIntensity: 2,
-    color: 0x000000,
-    metalness: 1,
-    roughness: 0.1
-  });
 
   const maze = Array.from({ length: size }, () => Array(size).fill(1));
   const carve = (x, y) => {
@@ -80,8 +81,8 @@ function addLEDStrips(wall, wallSize, maze, x, z, stripGeo, stripMat) {
 
   function isEmpty(x, z, maze) {
     return true;
-    if (z < 0 || z >= maze.length || x < 0 || x >= maze[0].length) return true;
-    return maze[z][x] === 0;
+    // if (z < 0 || z >= maze.length || x < 0 || x >= maze[0].length) return true;
+    // return maze[z][x] === 0;
   }
 
   if (isEmpty(x, z - 1, maze)) {

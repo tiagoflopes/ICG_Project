@@ -6,6 +6,7 @@ let clock = new THREE.Clock();
 let mazeLayout, offsetX, offsetZ, wallSize;
 let state = 'WALK'; // 'WALK' or 'CHASE'
 let targetTile = null;
+let lastSeenTime = null;
 
 export function getEnemyState() {
   return state;
@@ -51,13 +52,24 @@ export function updateEnemy(player, scene) {
   const playerTile = worldToTile(player.position);
   const enemyTile = worldToTile(enemy.position);
 
+  // 🔁 Return to walk if player hasn't been seen for 10 seconds
+  if (state === 'CHASE' && lastSeenTime && performance.now() - lastSeenTime > 10000) {
+    state = 'WALK';
+    targetTile = null;
+    if (walkAction) {
+      runAction?.stop();
+      walkAction.play();
+    }
+    console.log("🔙 Enemy lost the player, returning to patrol.");
+  }
+
   if (state === 'WALK' && canSeePlayer(enemyTile, playerTile)) {
     state = 'CHASE';
+    lastSeenTime = performance.now();
     if (runAction) {
       walkAction.stop();
       runAction.play();
     }
-    // TODO: trigger sound/lights/etc here
     console.log("👁️ Enemy sees you!");
   }
 
@@ -68,21 +80,39 @@ export function updateEnemy(player, scene) {
     dir.y = 0;
     dir.normalize();
 
-    const moveDelta = dir.multiplyScalar(speed);
-    const tryPos = enemy.position.clone().add(moveDelta);
-    const tempBox = new THREE.Box3().setFromCenterAndSize(tryPos, new THREE.Vector3(1, 2, 1));
-
-    if (!checkCollision(tempBox)) {
-      enemy.position.copy(tryPos);
-      rotateEnemyTowards(dir)
+    if (canSeePlayer(enemyTile, playerTile)) {
+      lastSeenTime = performance.now();
     }
+
+    const steps = 3; // smaller steps to avoid clipping
+    const moveStep = dir.clone().multiplyScalar(speed / steps);
+    let nextPos = enemy.position.clone();
+
+    for (let i = 0; i < steps; i++) {
+      const tryPos = nextPos.clone().add(moveStep);
+      const tempBox = new THREE.Box3().setFromCenterAndSize(tryPos, new THREE.Vector3(1, 2, 1));
+
+      if (checkCollision(tempBox)) {
+        break; // stop moving further on collision
+      }
+
+      nextPos.copy(tryPos);
+    }
+
+    enemy.position.copy(nextPos);
+    rotateEnemyTowards(dir);
 
     // collision with player = game over
     const playerBox = new THREE.Box3().setFromObject(player);
     const enemyBox = new THREE.Box3().setFromObject(enemy);
     if (enemyBox.intersectsBox(playerBox)) {
-      console.log("💀 GAME OVER 💀");
-      // TODO: game over logic
+      document.getElementById('gameOver').style.display = 'block';
+
+      // Block controls
+      window.disableMovement = true;
+
+      // TODO: this was called too many times
+      setTimeout(() => location.reload(), 3000);
     }
 
     return;

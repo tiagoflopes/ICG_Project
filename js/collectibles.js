@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 let dots = [];
 let time = 0;
+let totalDots = 0;
 
 export function spawnDots(scene, mazeLayout, wallSize, offsetX, offsetZ, amount = 20) {
   const walkableTiles = [];
@@ -36,6 +37,9 @@ export function spawnDots(scene, mazeLayout, wallSize, offsetX, offsetZ, amount 
 
     return { mesh: dot, light };
   });
+
+  totalDots = dots.length;
+  updateDotCounter();
 }
 
 export function animateDots(deltaTime) {
@@ -49,15 +53,25 @@ export function animateDots(deltaTime) {
 export function checkDotCollection(player, scene) {
   const distanceThreshold = 2;
 
+  let collected = 0;
   dots = dots.filter(({ mesh, light }) => {
     const distance = mesh.position.distanceTo(player.position);
     if (distance < distanceThreshold) {
       mesh.visible = false;
       light.visible = false;
+      collected++;
       return false;
     }
     return true;
   });
 
+  if (collected > 0) updateDotCounter();
   return dots.length === 0;
+}
+
+function updateDotCounter() {
+  const counter = document.getElementById('dotCounter');
+  if (counter) {
+    counter.textContent = `Dots: ${totalDots - dots.length} / ${totalDots}`;
+  }
 }
