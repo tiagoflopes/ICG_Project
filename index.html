@@ -8,8 +8,37 @@
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
     </style>
-  <script type="module" crossorigin src="/ICG_Project/assets/index-CGxRduJb.js"></script>
+  <script type="module" crossorigin src="/ICG_Project/assets/index-DShjCz5t.js"></script>
+  <link rel="stylesheet" crossorigin href="/ICG_Project/assets/index-B2-Jf1cj.css">
 </head>
     <body>
+        <div id="startMenu">
+            <h1>Maze Horror</h1>
+            <button id="startBtn">Start Game</button>
+            <button id="helpBtn">Help</button>
+            <p id="helpText" style="display: none;">
+                Collect all the glowing orbs without getting caught. Use WASD to move and Shift to run.
+            </p>
+        </div>
+        <div id="gameOver" style="display: none;">
+            <h1>💀 Game Over 💀</h1>
+            <p>You were caught.</p>
+        </div>
+        <div id="youWon" style="display: none;">
+            <h1>🎉 You Won! 🎉</h1>
+            <p>All collectibles gathered!</p>
+        </div>
+        <div id="dotCounter" style="
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-family: monospace;
+            font-size: 16px;
+            z-index: 1;">
+            Dots: 0 / 0
+        </div>
     </body>
 </html>
