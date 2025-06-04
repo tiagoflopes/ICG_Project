@@ -55,11 +55,11 @@ function init() {
   const groundSize = mazeSize * wallSize;
 
   const textureLoader = new THREE.TextureLoader();
-  const floorTex = textureLoader.load('textures/metal_plate_diff_1k.jpg');
-  const floorMetal = textureLoader.load('textures/metal_plate_metal_1k.jpg');
-  const floorAo = textureLoader.load('textures/metal_plate_ao_1k.jpg');
-  const floorRough = textureLoader.load('textures/metal_plate_rough_1k.jpg');
-  const floorNormal = textureLoader.load('textures/metal_plate_nor_gl_1k.jpg');
+  const floorTex = textureLoader.load('assets/metal_plate_diff_1k.jpg');
+  const floorMetal = textureLoader.load('assets/metal_plate_metal_1k.jpg');
+  const floorAo = textureLoader.load('assets/metal_plate_ao_1k.jpg');
+  const floorRough = textureLoader.load('assets/metal_plate_rough_1k.jpg');
+  const floorNormal = textureLoader.load('assets/metal_plate_nor_gl_1k.jpg');
 
   floorTex.wrapS = floorTex.wrapT =
   floorRough.wrapS = floorRough.wrapT =
@@ -90,7 +90,6 @@ function init() {
   const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(groundSize, groundSize), groundMaterial);
   ceiling.rotation.x = Math.PI / 2; // flip upward
   ceiling.position.y = 3;
-  ceiling.receiveShadow = true;
   scene.add(ceiling);
 
   spawnDots(scene, layout, wallSize, offsetX, offsetZ, 30);

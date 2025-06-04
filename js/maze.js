@@ -37,11 +37,11 @@ export function generateMaze(scene, size, wallSize) {
   }
 
   const textureLoader = new THREE.TextureLoader();
-  const baseColor = textureLoader.load('textures/metal_plate_02_diff_1k.jpg');
-  const normalMap = textureLoader.load('textures/metal_plate_02_nor_gl_1k.jpg');
-  const roughnessMap = textureLoader.load('textures/metal_plate_02_rough_1k.jpg');
-  const metalnessMap = textureLoader.load('textures/metal_plate_02_metal_1k.jpg');
-  const aoMap = textureLoader.load('textures/metal_plate_02_ao_1k.jpg');
+  const baseColor = textureLoader.load('assets/metal_plate_02_diff_1k.jpg');
+  const normalMap = textureLoader.load('assets/metal_plate_02_nor_gl_1k.jpg');
+  const roughnessMap = textureLoader.load('assets/metal_plate_02_rough_1k.jpg');
+  const metalnessMap = textureLoader.load('assets/metal_plate_02_metal_1k.jpg');
+  const aoMap = textureLoader.load('assets/metal_plate_02_ao_1k.jpg');
 
   const wallMaterial = new THREE.MeshStandardMaterial({
     map: baseColor,

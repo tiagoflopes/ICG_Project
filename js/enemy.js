@@ -7,6 +7,7 @@ let mazeLayout, offsetX, offsetZ, wallSize;
 let state = 'WALK'; // 'WALK' or 'CHASE'
 let targetTile = null;
 let lastSeenTime = null;
+let gameOverTriggered = false;
 
 export function getEnemyState() {
   return state;
@@ -25,7 +26,7 @@ export function loadEnemy(scene, maze, _offsetX, _offsetZ, _wallSize) {
 
   const loader = new FBXLoader();
 
-  loader.load('models/walking.fbx', (model) => {
+  loader.load('assets/walking.fbx', (model) => {
     enemy = model;
     enemy.scale.set(0.002, 0.002, 0.002);
     enemy.position.set(posX, 0, posZ);
@@ -38,7 +39,7 @@ export function loadEnemy(scene, maze, _offsetX, _offsetZ, _wallSize) {
     walkAction.play();
 
     // preload run anim
-    loader.load('models/running.fbx', (runModel) => {
+    loader.load('assets/running.fbx', (runModel) => {
       runAction = mixer.clipAction(runModel.animations[0]);
     });
   });
@@ -105,13 +106,12 @@ export function updateEnemy(player, scene) {
     // collision with player = game over
     const playerBox = new THREE.Box3().setFromObject(player);
     const enemyBox = new THREE.Box3().setFromObject(enemy);
-    if (enemyBox.intersectsBox(playerBox)) {
-      document.getElementById('gameOver').style.display = 'block';
+    if (!gameOverTriggered && enemyBox.intersectsBox(playerBox)) {
+      gameOverTriggered = true;
 
-      // Block controls
+      document.getElementById('gameOver').style.display = 'block';
       window.disableMovement = true;
 
-      // TODO: this was called too many times
       setTimeout(() => location.reload(), 3000);
     }
 
