@@ -5,6 +5,7 @@ import { createPlayer, updatePlayerPosition } from './player';
 import { setupControls, handleKeyDown, handleKeyUp } from './controls';
 import { spawnDots, animateDots, checkDotCollection } from "./collectibles";
 import { loadEnemy, updateEnemy, getEnemyState } from "./enemy";
+import { initStartScene, disposeStartScene } from "./startScene";
 
 let scene, camera, renderer = [];
 let player;
@@ -22,8 +23,12 @@ const moveState = {
   run: false
 };
 
+initStartScene();
+
 document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('startMenu').style.display = 'none';
+  document.getElementById('dotCounter').style.display = 'block';
+  disposeStartScene();
   init();
 });
 
@@ -111,6 +116,8 @@ function init() {
 
   animate();
 }
+
+// TODO: add main page, remove dots overlay, tung tung movement
 
 function applyChaseEffects(time) {
   // Flickering red

@@ -8,6 +8,7 @@ let state = 'WALK'; // 'WALK' or 'CHASE'
 let targetTile = null;
 let lastSeenTime = null;
 let gameOverTriggered = false;
+let pathToPlayer = [];
 
 export function getEnemyState() {
   return state;
@@ -35,13 +36,19 @@ export function loadEnemy(scene, maze, _offsetX, _offsetZ, _wallSize) {
     scene.add(enemy);
 
     mixer = new THREE.AnimationMixer(enemy);
-    walkAction = mixer.clipAction(model.animations[0]);
+    const walkClip = removeRootMotion(model.animations[0]);
+    walkAction = mixer.clipAction(walkClip);
     walkAction.play();
 
-    // preload run anim
     loader.load('assets/running.fbx', (runModel) => {
-      runAction = mixer.clipAction(runModel.animations[0]);
+      const runClip = removeRootMotion(runModel.animations[0]);
+      runAction = mixer.clipAction(runClip);
     });
+
+    const glow = new THREE.PointLight(0xff4444, 0.8, 3, 2);
+    glow.castShadow = false;
+    enemy.add(glow);
+    glow.position.set(0, 2, 0)
   });
 }
 
@@ -77,41 +84,57 @@ export function updateEnemy(player, scene) {
   const speed = state === 'WALK' ? 0.02 : 0.06;
 
   if (state === 'CHASE') {
-    const dir = new THREE.Vector3().subVectors(player.position, enemy.position);
-    dir.y = 0;
-    dir.normalize();
-
     if (canSeePlayer(enemyTile, playerTile)) {
       lastSeenTime = performance.now();
-    }
 
-    const steps = 3; // smaller steps to avoid clipping
-    const moveStep = dir.clone().multiplyScalar(speed / steps);
-    let nextPos = enemy.position.clone();
-
-    for (let i = 0; i < steps; i++) {
-      const tryPos = nextPos.clone().add(moveStep);
-      const tempBox = new THREE.Box3().setFromCenterAndSize(tryPos, new THREE.Vector3(1, 2, 1));
-
-      if (checkCollision(tempBox)) {
-        break; // stop moving further on collision
+      // Only recalculate if path is empty or player changed tile
+      if (pathToPlayer.length === 0 || !pathToPlayer[pathToPlayer.length - 1] ||
+        pathToPlayer[pathToPlayer.length - 1].x !== playerTile.x ||
+        pathToPlayer[pathToPlayer.length - 1].z !== playerTile.z) {
+        pathToPlayer = findPathAStar(enemyTile, playerTile, mazeLayout);
       }
-
-      nextPos.copy(tryPos);
     }
 
-    enemy.position.copy(nextPos);
-    rotateEnemyTowards(dir);
+    if (pathToPlayer.length > 0) {
+      const nextStep = pathToPlayer[0];
+      const targetPos = new THREE.Vector3(
+        nextStep.x * wallSize + offsetX,
+        0,
+        nextStep.z * wallSize + offsetZ
+      );
 
-    // collision with player = game over
+      const dir = new THREE.Vector3().subVectors(targetPos, enemy.position);
+      dir.y = 0;
+      const distance = dir.length();
+
+      if (distance < 0.1) {
+        pathToPlayer.shift(); // reached tile
+      } else {
+        dir.normalize();
+        const steps = 3;
+        const moveStep = dir.clone().multiplyScalar(speed / steps);
+        let nextPos = enemy.position.clone();
+
+        for (let i = 0; i < steps; i++) {
+          const tryPos = nextPos.clone().add(moveStep);
+          const tempBox = new THREE.Box3().setFromCenterAndSize(tryPos, new THREE.Vector3(1, 2, 1));
+
+          if (checkCollision(tempBox)) break;
+          nextPos.copy(tryPos);
+        }
+
+        enemy.position.copy(nextPos);
+        rotateEnemyTowards(dir);
+      }
+    }
+
+    // Check for game over
     const playerBox = new THREE.Box3().setFromObject(player);
     const enemyBox = new THREE.Box3().setFromObject(enemy);
     if (!gameOverTriggered && enemyBox.intersectsBox(playerBox)) {
       gameOverTriggered = true;
-
       document.getElementById('gameOver').style.display = 'block';
       window.disableMovement = true;
-
       setTimeout(() => location.reload(), 3000);
     }
 
@@ -205,4 +228,68 @@ function checkCollision(box) {
 
 function rotateEnemyTowards(dir) {
   enemy.rotation.y = Math.atan2(dir.x, dir.z);
+}
+
+export function removeRootMotion(clip) {
+  clip.tracks = clip.tracks.filter(track => !track.name.endsWith('.position'));
+  return clip;
+}
+
+// A* path finding algorithm
+function findPathAStar(start, goal, maze) {
+  const sizeZ = maze.length;
+  const sizeX = maze[0].length;
+
+  const key = (x, z) => `${x},${z}`;
+  const parseKey = str => str.split(',').map(Number);
+
+  const openSet = new Set([key(start.x, start.z)]);
+  const cameFrom = {};
+
+  const gScore = { [key(start.x, start.z)]: 0 };
+  const fScore = { [key(start.x, start.z)]: heuristic(start, goal) };
+
+  function heuristic(a, b) {
+    return Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
+  }
+
+  const getNeighbors = (x, z) => {
+    return [
+      { x: x + 1, z }, { x: x - 1, z },
+      { x, z: z + 1 }, { x, z: z - 1 },
+    ].filter(n => n.x >= 0 && n.x < sizeX && n.z >= 0 && n.z < sizeZ && maze[n.z][n.x] === 0);
+  };
+
+  while (openSet.size) {
+    let current = [...openSet].reduce((lowest, node) => {
+      return fScore[node] < fScore[lowest] ? node : lowest;
+    });
+
+    const [cx, cz] = parseKey(current);
+    if (cx === goal.x && cz === goal.z) {
+      const path = [];
+      while (current in cameFrom) {
+        const [x, z] = parseKey(current);
+        path.unshift({ x, z });
+        current = cameFrom[current];
+      }
+      return path;
+    }
+
+    openSet.delete(current);
+
+    for (const neighbor of getNeighbors(cx, cz)) {
+      const nKey = key(neighbor.x, neighbor.z);
+      const tentativeG = gScore[current] + 1;
+
+      if (!(nKey in gScore) || tentativeG < gScore[nKey]) {
+        cameFrom[nKey] = current;
+        gScore[nKey] = tentativeG;
+        fScore[nKey] = tentativeG + heuristic(neighbor, goal);
+        openSet.add(nKey);
+      }
+    }
+  }
+
+  return []; // No path found
 }

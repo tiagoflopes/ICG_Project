@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const baseSpeed = 0.1;
+const baseSpeed = 0.05;
 
 export function createPlayer(scene, x, z) {
   const geometry = new THREE.BoxGeometry(1, 2, 1);
