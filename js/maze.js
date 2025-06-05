@@ -26,7 +26,6 @@ export function generateMaze(scene, size, wallSize) {
   maze[1][1] = 0;
   carve(1, 1);
 
-  // Randomly punch holes in walls to make alternate paths
   const holeCount = Math.floor(size * size * 0.05);
   for (let i = 0; i < holeCount; i++) {
     const x = Math.floor(Math.random() * size);
@@ -79,48 +78,33 @@ export function generateMaze(scene, size, wallSize) {
 function addLEDStrips(wall, wallSize, maze, x, z, stripGeo, stripMat) {
   const strips = [];
 
-  function isEmpty(x, z, maze) {
-    return true;
-    // if (z < 0 || z >= maze.length || x < 0 || x >= maze[0].length) return true;
-    // return maze[z][x] === 0;
-  }
+  let top = new THREE.Mesh(stripGeo, stripMat);
+  top.position.set(0, 1.95, wallSize / 2 + 0.01);
+  let bot = new THREE.Mesh(stripGeo, stripMat);
+  bot.position.set(0, -0.95, wallSize / 2 + 0.01);
+  strips.push(top, bot);
 
-  if (isEmpty(x, z - 1, maze)) {
-    // front
-    const top = new THREE.Mesh(stripGeo, stripMat);
-    top.position.set(0, 1.95, wallSize / 2 + 0.01);
-    const bot = new THREE.Mesh(stripGeo, stripMat);
-    bot.position.set(0, -0.95, wallSize / 2 + 0.01);
-    strips.push(top, bot);
-  }
-  if (isEmpty(x, z + 1, maze)) {
-    // back
-    const top = new THREE.Mesh(stripGeo, stripMat);
-    top.position.set(0, 1.95, -wallSize / 2 - 0.01);
-    const bot = new THREE.Mesh(stripGeo, stripMat);
-    bot.position.set(0, -0.95, -wallSize / 2 - 0.01);
-    strips.push(top, bot);
-  }
-  if (isEmpty(x - 1, z, maze)) {
-    // left
-    const top = new THREE.Mesh(stripGeo, stripMat);
-    top.rotation.y = Math.PI / 2;
-    top.position.set(-wallSize / 2 - 0.01, 1.95, 0);
-    const bot = new THREE.Mesh(stripGeo, stripMat);
-    bot.rotation.y = Math.PI / 2;
-    bot.position.set(-wallSize / 2 - 0.01, -0.95, 0);
-    strips.push(top, bot);
-  }
-  if (isEmpty(x + 1, z, maze)) {
-    // right
-    const top = new THREE.Mesh(stripGeo, stripMat);
-    top.rotation.y = Math.PI / 2;
-    top.position.set(wallSize / 2 + 0.01, 1.95, 0);
-    const bot = new THREE.Mesh(stripGeo, stripMat);
-    bot.rotation.y = Math.PI / 2;
-    bot.position.set(wallSize / 2 + 0.01, -0.95, 0);
-    strips.push(top, bot);
-  }
+  top = new THREE.Mesh(stripGeo, stripMat);
+  top.position.set(0, 1.95, -wallSize / 2 - 0.01);
+  bot = new THREE.Mesh(stripGeo, stripMat);
+  bot.position.set(0, -0.95, -wallSize / 2 - 0.01);
+  strips.push(top, bot);
+
+  top = new THREE.Mesh(stripGeo, stripMat);
+  top.rotation.y = Math.PI / 2;
+  top.position.set(-wallSize / 2 - 0.01, 1.95, 0);
+  bot = new THREE.Mesh(stripGeo, stripMat);
+  bot.rotation.y = Math.PI / 2;
+  bot.position.set(-wallSize / 2 - 0.01, -0.95, 0);
+  strips.push(top, bot);
+
+  top = new THREE.Mesh(stripGeo, stripMat);
+  top.rotation.y = Math.PI / 2;
+  top.position.set(wallSize / 2 + 0.01, 1.95, 0);
+  bot = new THREE.Mesh(stripGeo, stripMat);
+  bot.rotation.y = Math.PI / 2;
+  bot.position.set(wallSize / 2 + 0.01, -0.95, 0);
+  strips.push(top, bot);
 
   strips.forEach(strip => wall.add(strip));
 }

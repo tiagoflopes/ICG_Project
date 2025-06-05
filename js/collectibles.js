@@ -4,7 +4,7 @@ let dots = [];
 let time = 0;
 let totalDots = 0;
 
-export function spawnDots(scene, mazeLayout, wallSize, offsetX, offsetZ, amount = 20) {
+export function spawnDots(scene, mazeLayout, wallSize, offsetX, offsetZ, amount) {
   const walkableTiles = [];
 
   mazeLayout.forEach((row, z) => {
@@ -50,7 +50,7 @@ export function animateDots(deltaTime) {
   });
 }
 
-export function checkDotCollection(player, scene) {
+export function checkDotCollection(player) {
   const distanceThreshold = 2;
 
   let collected = 0;

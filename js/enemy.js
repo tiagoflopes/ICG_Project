@@ -32,7 +32,7 @@ export function loadEnemy(scene, maze, _offsetX, _offsetZ, _wallSize) {
     enemy.scale.set(0.002, 0.002, 0.002);
     enemy.position.set(posX, 0, posZ);
     enemy.userData.tile = { x: tileX, z: tileZ };
-    enemy.userData.direction = { x: -1, z: 0 }; // Start going left
+    enemy.userData.direction = { x: -1, z: 0 };
     scene.add(enemy);
 
     mixer = new THREE.AnimationMixer(enemy);
@@ -52,7 +52,7 @@ export function loadEnemy(scene, maze, _offsetX, _offsetZ, _wallSize) {
   });
 }
 
-export function updateEnemy(player, scene) {
+export function updateEnemy(player) {
   if (!enemy || !mixer) return;
 
   mixer.update(clock.getDelta());
@@ -60,7 +60,6 @@ export function updateEnemy(player, scene) {
   const playerTile = worldToTile(player.position);
   const enemyTile = worldToTile(enemy.position);
 
-  // 🔁 Return to walk if player hasn't been seen for 10 seconds
   if (state === 'CHASE' && lastSeenTime && performance.now() - lastSeenTime > 10000) {
     state = 'WALK';
     targetTile = null;
@@ -68,7 +67,6 @@ export function updateEnemy(player, scene) {
       runAction?.stop();
       walkAction.play();
     }
-    console.log("🔙 Enemy lost the player, returning to patrol.");
   }
 
   if (state === 'WALK' && canSeePlayer(enemyTile, playerTile)) {
@@ -78,7 +76,6 @@ export function updateEnemy(player, scene) {
       walkAction.stop();
       runAction.play();
     }
-    console.log("👁️ Enemy sees you!");
   }
 
   const speed = state === 'WALK' ? 0.02 : 0.06;
@@ -87,7 +84,6 @@ export function updateEnemy(player, scene) {
     if (canSeePlayer(enemyTile, playerTile)) {
       lastSeenTime = performance.now();
 
-      // Only recalculate if path is empty or player changed tile
       if (pathToPlayer.length === 0 || !pathToPlayer[pathToPlayer.length - 1] ||
         pathToPlayer[pathToPlayer.length - 1].x !== playerTile.x ||
         pathToPlayer[pathToPlayer.length - 1].z !== playerTile.z) {
@@ -108,7 +104,7 @@ export function updateEnemy(player, scene) {
       const distance = dir.length();
 
       if (distance < 0.1) {
-        pathToPlayer.shift(); // reached tile
+        pathToPlayer.shift();
       } else {
         dir.normalize();
         const steps = 3;
@@ -128,7 +124,6 @@ export function updateEnemy(player, scene) {
       }
     }
 
-    // Check for game over
     const playerBox = new THREE.Box3().setFromObject(player);
     const enemyBox = new THREE.Box3().setFromObject(enemy);
     if (!gameOverTriggered && enemyBox.intersectsBox(playerBox)) {
@@ -141,7 +136,6 @@ export function updateEnemy(player, scene) {
     return;
   }
 
-  // --- Random WALK mode ---
   if (!targetTile || reachedTarget(enemy.position, targetTile)) {
     const directions = shuffle([
       { x: 0, z: -1 },
@@ -180,7 +174,7 @@ export function updateEnemy(player, scene) {
       enemy.position.copy(tryPos);
       rotateEnemyTowards(moveDir)
     } else {
-      targetTile = null; // pick another route
+      targetTile = null;
     }
   }
 }
@@ -235,7 +229,6 @@ export function removeRootMotion(clip) {
   return clip;
 }
 
-// A* path finding algorithm
 function findPathAStar(start, goal, maze) {
   const sizeZ = maze.length;
   const sizeX = maze[0].length;
@@ -291,5 +284,5 @@ function findPathAStar(start, goal, maze) {
     }
   }
 
-  return []; // No path found
+  return [];
 }

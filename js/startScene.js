@@ -5,7 +5,7 @@ import { removeRootMotion } from "./enemy";
 let scene, camera, renderer, enemy, mixer, clock, running = false;
 let direction = 1;
 
-export function initStartScene(containerId) {
+export function initStartScene() {
   clock = new THREE.Clock();
 
   scene = new THREE.Scene();
@@ -23,13 +23,11 @@ export function initStartScene(containerId) {
   light.position.set(0, 3, 5);
   scene.add(light);
 
-  // Wall
   const wallMat = new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 1, roughness: 0.2 });
   const wall = new THREE.Mesh(new THREE.BoxGeometry(8, 4, 0.2), wallMat);
   wall.position.z = -1;
   scene.add(wall);
 
-  // LED Strips
   const stripMat = new THREE.MeshStandardMaterial({ emissive: 0x00ffff, color: 0x000000 });
   const topStrip = new THREE.Mesh(new THREE.BoxGeometry(8, 0.05, 0.1), stripMat);
   const bottomStrip = topStrip.clone();
@@ -38,13 +36,12 @@ export function initStartScene(containerId) {
   bottomStrip.position.set(0, -1.95, -0.89);
   scene.add(topStrip, bottomStrip);
 
-  // Enemy model
   const loader = new FBXLoader();
   loader.load('assets/walking.fbx', (model) => {
     enemy = model;
     enemy.scale.set(0.002, 0.002, 0.002);
     enemy.position.set(-2, 0, 0);
-    enemy.rotation.y = 1/2 * Math.PI; // face right
+    enemy.rotation.y = 1/2 * Math.PI;
     scene.add(enemy);
 
     const glow = new THREE.PointLight(0xff4444, 0.8, 3, 2);
@@ -74,10 +71,10 @@ function animate() {
 
     if (enemy.position.x > 2) {
       direction = -1;
-      enemy.rotation.y = 3/2 * Math.PI; // face left
+      enemy.rotation.y = 3/2 * Math.PI;
     } else if (enemy.position.x < -2) {
       direction = 1;
-      enemy.rotation.y = 1/2 * Math.PI; // face right
+      enemy.rotation.y = 1/2 * Math.PI;
     }
   }
 

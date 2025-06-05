@@ -13,7 +13,9 @@ let clock = new THREE.Clock();
 let wasChasing = false;
 let cameraRig;
 const wallSize = 4;
-const mazeSize = 21;
+const mazeSize = 17;
+const startXc = 1;
+const startZc = 1;
 
 const moveState = {
   forward: false,
@@ -93,7 +95,7 @@ function init() {
   scene.add(ground);
 
   const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(groundSize, groundSize), groundMaterial);
-  ceiling.rotation.x = Math.PI / 2; // flip upward
+  ceiling.rotation.x = Math.PI / 2;
   ceiling.position.y = 3;
   scene.add(ceiling);
 
@@ -101,8 +103,8 @@ function init() {
 
   loadEnemy(scene, layout, offsetX, offsetZ, wallSize);
 
-  const startX = 1 * wallSize + offsetX;
-  const startZ = 1 * wallSize + offsetZ;
+  const startX = startXc * wallSize + offsetX;
+  const startZ = startZc * wallSize + offsetZ;
 
   player = createPlayer(scene, startX, startZ);
   cameraRig = new THREE.Object3D();
@@ -117,10 +119,7 @@ function init() {
   animate();
 }
 
-// TODO: add main page, remove dots overlay, tung tung movement
-
 function applyChaseEffects(time) {
-  // Flickering red
   const flicker = (Math.sin(time * 20) + 1) / 2;
   const red = new THREE.Color().lerpColors(
     new THREE.Color(0x440000),
@@ -129,13 +128,12 @@ function applyChaseEffects(time) {
   );
   stripMat.emissive.set(red);
 
-  // Camera tilt
   cameraRig.rotation.z = Math.sin(time * 8) * 0.05;
 }
 
 function resetChaseEffects() {
-  stripMat.emissive.set(0x00ffff); // restore original color
-  cameraRig.rotation.z = 0; // restore upright view
+  stripMat.emissive.set(0x00ffff);
+  cameraRig.rotation.z = 0;
 }
 
 function animate() {
@@ -144,7 +142,7 @@ function animate() {
 
   requestAnimationFrame(animate);
 
-  updateEnemy(player, scene);
+  updateEnemy(player);
   updatePlayerPosition(player, camera, moveState, window.wallBoxes);
 
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
@@ -162,7 +160,7 @@ function animate() {
     wasChasing = false;
   }
 
-  const gameWon = checkDotCollection(player, scene);
+  const gameWon = checkDotCollection(player);
   if (gameWon) {
     if (!window.hasWon) {
       window.hasWon = true;
